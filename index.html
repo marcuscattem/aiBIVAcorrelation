@@ -282,6 +282,33 @@ tr:last-child td { border-bottom: none; }
   cursor: pointer;
 }
 
+.danger-btn {
+  border-color: #6f3434;
+  background: #351818;
+  color: #ffaaa8;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(54px, 1fr));
+  gap: 4px;
+  min-width: 124px;
+}
+
+.ellipse-input {
+  min-width: 54px;
+  height: 26px;
+  padding: 3px 5px;
+  font-size: 0.68rem;
+}
+
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 118px;
+}
+
 .rho-chip {
   display: inline-block;
   background: #0e2e22;
@@ -356,13 +383,13 @@ tr:last-child td { border-bottom: none; }
       <div class="card-title">Grupos</div>
       <div class="group-header"><span class="dot" style="background:#4f8ef7"></span>Grupo 1</div>
       <div class="g2">
-        <div class="fg"><label>Média R/H</label><input type="number" id="g1_mr" value="264.68" step="0.01"></div>
-        <div class="fg"><label>Média Xc/H</label><input type="number" id="g1_mx" value="30.22" step="0.01"></div>
-        <div class="fg"><label>σ R/H</label><input type="number" id="g1_sr" value="26.05" step="0.01"></div>
-        <div class="fg"><label>σ Xc/H</label><input type="number" id="g1_sx" value="3.61" step="0.01"></div>
+        <div class="fg"><label>Média R/H</label><input type="number" id="g1_mr" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>Média Xc/H</label><input type="number" id="g1_mx" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>σ R/H</label><input type="number" id="g1_sr" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>σ Xc/H</label><input type="number" id="g1_sx" value="" step="0.01" placeholder="Informe"></div>
       </div>
       <div class="g2">
-        <div class="fg"><label>N</label><input type="number" id="g1_n" value="59"></div>
+        <div class="fg"><label>N</label><input type="number" id="g1_n" value="" placeholder="Opcional"></div>
         <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g1_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
       </div>
       <div class="fg">
@@ -375,13 +402,13 @@ tr:last-child td { border-bottom: none; }
 
       <div class="group-header"><span class="dot" style="background:#f25f5c"></span>Grupo 2</div>
       <div class="g2">
-        <div class="fg"><label>Média R/H</label><input type="number" id="g2_mr" value="253.52" step="0.01"></div>
-        <div class="fg"><label>Média Xc/H</label><input type="number" id="g2_mx" value="28.60" step="0.01"></div>
-        <div class="fg"><label>σ R/H</label><input type="number" id="g2_sr" value="31.68" step="0.01"></div>
-        <div class="fg"><label>σ Xc/H</label><input type="number" id="g2_sx" value="4.34" step="0.01"></div>
+        <div class="fg"><label>Média R/H</label><input type="number" id="g2_mr" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>Média Xc/H</label><input type="number" id="g2_mx" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>σ R/H</label><input type="number" id="g2_sr" value="" step="0.01" placeholder="Informe"></div>
+        <div class="fg"><label>σ Xc/H</label><input type="number" id="g2_sx" value="" step="0.01" placeholder="Informe"></div>
       </div>
       <div class="g2">
-        <div class="fg"><label>N</label><input type="number" id="g2_n" value="33"></div>
+        <div class="fg"><label>N</label><input type="number" id="g2_n" value="" placeholder="Opcional"></div>
         <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g2_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
       </div>
       <div class="fg">
@@ -437,7 +464,8 @@ tr:last-child td { border-bottom: none; }
       <p class="canvas-hint">
         <span class="green">verde</span> = elipses detectadas/editáveis &nbsp;|&nbsp;
         <span class="yellow">amarelo</span> = seleção e alças &nbsp;|&nbsp;
-        <span>tracejado azul/vermelho</span> = previsão BIVA calculada pelos dados do grupo
+        <span>alça circular externa</span> = rotacionar &nbsp;|&nbsp;
+        tracejado azul/vermelho = previsão BIVA calculada pelos dados do grupo
       </p>
     </div>
 
@@ -468,6 +496,8 @@ const gvn = id => {
   const v = document.getElementById(id).value.trim();
   return v === '' ? null : parseFloat(v);
 };
+const finiteOrNull = v => Number.isFinite(v) ? v : null;
+const positiveOrNull = v => Number.isFinite(v) && v > 0 ? v : null;
 
 document.getElementById('threshold').addEventListener('input', e => {
   document.getElementById('thrVal').textContent = e.target.value;
@@ -887,18 +917,39 @@ function dedupeEllipses(items) {
 }
 
 function getGroups() {
-  return [
-    { id: 1, mr: gv('g1_mr'), mx: gv('g1_mx'), sr: gv('g1_sr'), sx: gv('g1_sx'), n: gi('g1_n'),
-      phaMean: gvn('g1_pha_mean'), phaSd: gvn('g1_pha_sd'), color: '#4f8ef7' },
-    { id: 2, mr: gv('g2_mr'), mx: gv('g2_mx'), sr: gv('g2_sr'), sx: gv('g2_sx'), n: gi('g2_n'),
-      phaMean: gvn('g2_pha_mean'), phaSd: gvn('g2_pha_sd'), color: '#f25f5c' }
+  const defs = [
+    { id: 1, color: '#4f8ef7' },
+    { id: 2, color: '#f25f5c' }
   ];
+  return defs.map(def => {
+    const mr = finiteOrNull(gv(`g${def.id}_mr`));
+    const mx = finiteOrNull(gv(`g${def.id}_mx`));
+    const sr = positiveOrNull(gv(`g${def.id}_sr`));
+    const sx = positiveOrNull(gv(`g${def.id}_sx`));
+    const nRaw = gi(`g${def.id}_n`);
+    const n = Number.isFinite(nRaw) && nRaw > 0 ? nRaw : 1;
+    const ready = mr !== null && mx !== null && sr !== null && sx !== null;
+    return {
+      ...def,
+      mr,
+      mx,
+      sr,
+      sx,
+      n,
+      ready,
+      phaMean: gvn(`g${def.id}_pha_mean`),
+      phaSd: gvn(`g${def.id}_pha_sd`)
+    };
+  }).filter(g => g.ready);
 }
 
 function matchGroup(e, groups) {
   const xR = gv('xMax') - gv('xMin');
   const yR = gv('yMax') - gv('yMin');
   let best = null, bestDist = Infinity;
+  if (!groups.length || !Number.isFinite(xR) || !Number.isFinite(yR) || Math.abs(xR) < 1e-8 || Math.abs(yR) < 1e-8) {
+    return { group: null, distance: Infinity };
+  }
   for (const g of groups) {
     const d = Math.hypot((e.cx - g.mr) / xR, (e.cy - g.mx) / yR);
     if (d < bestDist) {
@@ -910,14 +961,14 @@ function matchGroup(e, groups) {
 }
 
 function rhoFromAngle(theta, sdR, sdXc) {
-  if (Math.abs(sdR * sdXc) < 1e-8) return null;
+  if (!Number.isFinite(theta) || !Number.isFinite(sdR) || !Number.isFinite(sdXc) || Math.abs(sdR * sdXc) < 1e-8) return null;
   const t2 = Math.tan(2 * theta);
   const rho = t2 * (sdR * sdR - sdXc * sdXc) / (2 * sdR * sdXc);
   return Math.max(-0.999, Math.min(0.999, rho));
 }
 
 function rhoFromPhaseAngle(mr, mx, sr, sx, sdAlphaDeg) {
-  if (!sdAlphaDeg || sdAlphaDeg <= 0) return null;
+  if (![mr, mx, sr, sx, sdAlphaDeg].every(Number.isFinite) || sdAlphaDeg <= 0) return null;
   const sdAlpha = sdAlphaDeg * Math.PI / 180;
   const r2 = mr * mr + mx * mx;
   const denom = 2 * mr * mx * sr * sx;
@@ -992,6 +1043,10 @@ function drawHandles(e) {
       ctx.strokeStyle = '#f4b942';
       ctx.fill();
       ctx.stroke();
+      ctx.font = '10px IBM Plex Mono, monospace';
+      ctx.fillStyle = '#f4b942';
+      ctx.textAlign = 'left';
+      ctx.fillText('rot', h.x + 8, h.y + 3);
     } else if (h.kind === 'center') {
       ctx.rect(h.x - 5, h.y - 5, 10, 10);
       ctx.fillStyle = '#f4b942';
@@ -1213,16 +1268,62 @@ function duplicateSelected() {
   renderAll();
 }
 
+function setEllipseValue(id, field, rawValue) {
+  const e = ellipses.find(item => item.id === id);
+  const value = parseFloat(rawValue);
+  if (!e || !Number.isFinite(value)) return;
+  const xSpan = Math.abs(gv('xMax') - gv('xMin')) || 300;
+  const ySpan = Math.abs(gv('yMax') - gv('yMin')) || 35;
+  if (field === 'cx') e.cx = value;
+  if (field === 'cy') e.cy = value;
+  if (field === 'a') e.a = Math.max(xSpan * 0.004, value);
+  if (field === 'b') e.b = Math.max(ySpan * 0.004, value);
+  if (field === 'theta') e.theta = value * Math.PI / 180;
+  e.source = 'manual';
+  e.quality = Math.max(e.quality || 0.45, 0.72);
+  selectedEllipseId = id;
+  setEditStatus(`Elipse #${id} editada pela lista inferior.`, 'ok');
+  renderAll();
+}
+
+function nudgeEllipse(id, dxFactor, dyFactor) {
+  const e = ellipses.find(item => item.id === id);
+  if (!e) return;
+  const xStep = Math.abs(gv('xMax') - gv('xMin')) * 0.01 || 1;
+  const yStep = Math.abs(gv('yMax') - gv('yMin')) * 0.01 || 1;
+  e.cx += dxFactor * xStep;
+  e.cy += dyFactor * yStep;
+  e.source = 'manual';
+  e.quality = Math.max(e.quality || 0.45, 0.72);
+  selectedEllipseId = id;
+  setEditStatus(`Elipse #${id} movida pela lista inferior.`, 'ok');
+  renderAll();
+}
+
+function rotateEllipse(id, degrees) {
+  const e = ellipses.find(item => item.id === id);
+  if (!e) return;
+  e.theta += degrees * Math.PI / 180;
+  e.source = 'manual';
+  e.quality = Math.max(e.quality || 0.45, 0.72);
+  selectedEllipseId = id;
+  setEditStatus(`Elipse #${id} rotacionada ${degrees > 0 ? '+' : ''}${degrees}°.`, 'ok');
+  renderAll();
+}
+
+function deleteEllipse(id) {
+  ellipses = ellipses.filter(e => e.id !== id);
+  if (selectedEllipseId === id) selectedEllipseId = ellipses[0]?.id ?? null;
+  setEditStatus(`Elipse #${id} removida.`, 'ok');
+  renderAll();
+}
+
 function deleteSelected() {
   if (selectedEllipseId === null) {
     setEditStatus('Selecione uma elipse antes de remover.', 'warn');
     return;
   }
-  const removed = selectedEllipseId;
-  ellipses = ellipses.filter(e => e.id !== selectedEllipseId);
-  selectedEllipseId = ellipses[0]?.id ?? null;
-  setEditStatus(`Elipse #${removed} removida.`, 'ok');
-  renderAll();
+  deleteEllipse(selectedEllipseId);
 }
 
 function clearAll() {
@@ -1265,14 +1366,37 @@ function showTable(results) {
     rows += `<tr class="${r.id === selectedEllipseId ? 'selected-row' : ''}">
       <td><button class="mini-btn" onclick="selectEllipse(${r.id})">#${r.id}</button></td>
       <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>${g ? `Grupo ${g.id}` : '-'}</td>
-      <td class="mono">${fmt(r.cx)}, ${fmt(r.cy)}</td>
-      <td class="mono">a=${fmt(r.a)}<br>b=${fmt(r.b)}</td>
-      <td class="mono">${fmt(r.theta * 180 / Math.PI, 2)}°</td>
+      <td>
+        <div class="edit-grid">
+          <input class="ellipse-input" type="number" step="0.01" value="${fmt(r.cx)}" title="Centro R/H" onchange="setEllipseValue(${r.id}, 'cx', this.value)">
+          <input class="ellipse-input" type="number" step="0.01" value="${fmt(r.cy)}" title="Centro Xc/H" onchange="setEllipseValue(${r.id}, 'cy', this.value)">
+        </div>
+      </td>
+      <td>
+        <div class="edit-grid">
+          <input class="ellipse-input" type="number" step="0.01" min="0" value="${fmt(r.a)}" title="Semieixo maior" onchange="setEllipseValue(${r.id}, 'a', this.value)">
+          <input class="ellipse-input" type="number" step="0.01" min="0" value="${fmt(r.b)}" title="Semieixo menor" onchange="setEllipseValue(${r.id}, 'b', this.value)">
+        </div>
+      </td>
+      <td>
+        <input class="ellipse-input" type="number" step="0.1" value="${fmt(r.theta * 180 / Math.PI, 1)}" title="Rotação em graus" onchange="setEllipseValue(${r.id}, 'theta', this.value)">
+      </td>
       <td>${source}<br><span class="rho-mini">q=${fmt(r.quality, 2)} px=${r.size || '-'}</span></td>
       <td><span class="rho-mini">${r.rhoImage !== null ? fmt(r.rhoImage, 4) : 'N/A'}</span><br><span class="rho-mini">imagem</span></td>
       ${hasPhase ? `<td><span class="rho-mini" style="color:var(--yellow)">${r.rhoPhase !== null ? fmt(r.rhoPhase, 4) : '-'}</span><br><span class="rho-mini">fase</span></td>` : ''}
       <td><span class="rho-chip">${r.rhoCombined !== null ? fmt(r.rhoCombined, 4) : 'N/A'}</span></td>
       <td class="matrix-cell">[${varR !== null ? fmt(varR, 3) : '-'} &nbsp; ${cov !== null ? fmt(cov, 3) : '-'}]<br>[${cov !== null ? fmt(cov, 3) : '-'} &nbsp; ${varX !== null ? fmt(varX, 3) : '-'}]</td>
+      <td>
+        <div class="action-row">
+          <button class="mini-btn" title="Mover para esquerda" onclick="nudgeEllipse(${r.id}, -1, 0)">←</button>
+          <button class="mini-btn" title="Mover para direita" onclick="nudgeEllipse(${r.id}, 1, 0)">→</button>
+          <button class="mini-btn" title="Mover para cima" onclick="nudgeEllipse(${r.id}, 0, 1)">↑</button>
+          <button class="mini-btn" title="Mover para baixo" onclick="nudgeEllipse(${r.id}, 0, -1)">↓</button>
+          <button class="mini-btn" title="Rotacionar -5°" onclick="rotateEllipse(${r.id}, -5)">-5°</button>
+          <button class="mini-btn" title="Rotacionar +5°" onclick="rotateEllipse(${r.id}, 5)">+5°</button>
+          <button class="mini-btn danger-btn" title="Excluir" onclick="deleteEllipse(${r.id})">Excluir</button>
+        </div>
+      </td>
     </tr>`;
   }
 
@@ -1295,12 +1419,13 @@ function showTable(results) {
           ${hasPhase ? '<th>ρ fase</th>' : ''}
           <th>ρ final</th>
           <th>Matriz Σ</th>
+          <th>Ações</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     <div class="status-msg msg-info" style="margin-top:10px">
-      ${axisNote} | ${selected} O ρ final combina a leitura da elipse com σ do ângulo de fase quando esse dado é informado, ponderado por N.
+      ${axisNote} | ${selected} Use os campos da lista para editar centro, semieixos e rotação, ou as setas para mover. O ρ final aparece quando os dados do grupo são informados.
     </div>
   `;
 }
