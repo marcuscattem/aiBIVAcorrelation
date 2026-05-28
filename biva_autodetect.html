@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIVA Auto-Detector</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600;700&display=swap');
+
+:root {
+  --bg: #0f1117;
+  --surface: #161b27;
+  --surface2: #1c2333;
+  --surface3: #20293b;
+  --border: #2a3245;
+  --primary: #4f8ef7;
+  --red: #f25f5c;
+  --green: #43d9a2;
+  --yellow: #f4b942;
+  --text: #e2e8f5;
+  --muted: #8190ad;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 18px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1440px;
+  margin: 0 auto 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-family: var(--mono);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+header p {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 14px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.sidebar { display: flex; flex-direction: column; gap: 10px; }
+
+.card, .canvas-wrap, .results {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.card { padding: 13px; }
+.main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.canvas-wrap { padding: 11px; }
+.results { padding: 14px; min-width: 0; }
+
+.card-title {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-title::before {
+  content: '';
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--primary);
+}
+
+label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+
+input[type="number"], select, input[type="range"] {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  font-family: var(--mono);
+}
+
+input[type="file"] {
+  font-size: 0.76rem;
+  color: var(--muted);
+  width: 100%;
+}
+
+input[type="range"] { padding: 3px 0; accent-color: var(--primary); }
+input.highlight { border-color: var(--green); color: var(--green); }
+
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.fg { margin-bottom: 7px; }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+.btn {
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 9px;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: transform 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--primary); color: #07111f; }
+.btn-primary:hover { background: #6ba3ff; }
+.btn-secondary { background: #0e2e22; color: var(--green); border: 1px solid #1a5a3a; }
+.btn-secondary:hover { border-color: var(--green); }
+.btn-warn { background: #3a2a10; color: var(--yellow); border: 1px solid #6b4a10; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+canvas {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: crosshair;
+  background: #1a1a2e;
+  touch-action: none;
+}
+
+.canvas-hint {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 7px;
+  text-align: center;
+  font-family: var(--mono);
+  line-height: 1.45;
+}
+
+.canvas-hint span { color: var(--primary); }
+.canvas-hint .green { color: var(--green); }
+.canvas-hint .yellow { color: var(--yellow); }
+
+.status-msg, .axis-detect-info {
+  font-size: 0.74rem;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  line-height: 1.45;
+}
+
+.axis-detect-info {
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin-top: 7px;
+}
+
+.axis-detect-info.active { color: var(--green); background: #0e2e22; border-color: #1a5a3a; }
+.msg-info { background: #142648; color: #8bb6ff; border: 1px solid #2d4a8a; }
+.msg-warn { background: #3a2a10; color: var(--yellow); border: 1px solid #6b4a10; }
+.msg-ok { background: #0e2e22; color: var(--green); border: 1px solid #1a5a3a; }
+
+.thr-row { display: flex; align-items: center; gap: 8px; }
+.thr-row input { flex: 1; }
+.thr-val { font-family: var(--mono); font-size: 0.78rem; min-width: 34px; text-align: right; color: var(--primary); }
+
+.phase-hint, .edit-hint {
+  font-size: 0.64rem;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 28px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-family: var(--mono);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+th {
+  background: var(--bg);
+  padding: 7px 8px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr.selected-row td { background: #2a250d; }
+tr:last-child td { border-bottom: none; }
+
+.mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  min-height: 26px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface3);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.rho-chip {
+  display: inline-block;
+  background: #0e2e22;
+  color: var(--green);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--green);
+}
+
+.rho-mini {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+}
+
+.badge-green { background: #0e2e22; color: var(--green); border: 1px solid #1a5a3a; }
+.badge-gray { background: #303849; color: #c4cce0; border: 1px solid #4b556f; }
+.badge-yellow { background: #3a2a10; color: var(--yellow); border: 1px solid #6b4a10; }
+.matrix-cell, .mono { font-family: var(--mono); font-size: 0.7rem; line-height: 1.55; white-space: nowrap; }
+
+@media (max-width: 980px) {
+  body { padding: 12px; }
+  header { display: block; }
+  header p { text-align: left; margin-top: 6px; }
+  .layout { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>BIVA // detector editável</h1>
+  <p>Eixos automáticos, múltiplas elipses, alças de ajuste e ρ recalculado com os dados disponíveis.</p>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">Imagem</div>
+      <input type="file" id="imgUpload" accept="image/*">
+    </div>
+
+    <div class="card">
+      <div class="card-title">Calibração dos Eixos</div>
+      <div class="g2">
+        <div class="fg"><label>X min (R/H)</label><input type="number" id="xMin" value="0" step="10"></div>
+        <div class="fg"><label>X max (R/H)</label><input type="number" id="xMax" value="300" step="10"></div>
+        <div class="fg"><label>Y min (Xc/H)</label><input type="number" id="yMin" value="0" step="5"></div>
+        <div class="fg"><label>Y max (Xc/H)</label><input type="number" id="yMax" value="35" step="5"></div>
+      </div>
+      <button class="btn btn-secondary" onclick="detectAxes()">Auto-detectar eixos</button>
+      <div id="axisStatus" class="axis-detect-info">
+        Carregue uma imagem e deixe o app localizar a área útil do gráfico.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Grupos</div>
+      <div class="group-header"><span class="dot" style="background:#4f8ef7"></span>Grupo 1</div>
+      <div class="g2">
+        <div class="fg"><label>Média R/H</label><input type="number" id="g1_mr" value="264.68" step="0.01"></div>
+        <div class="fg"><label>Média Xc/H</label><input type="number" id="g1_mx" value="30.22" step="0.01"></div>
+        <div class="fg"><label>σ R/H</label><input type="number" id="g1_sr" value="26.05" step="0.01"></div>
+        <div class="fg"><label>σ Xc/H</label><input type="number" id="g1_sx" value="3.61" step="0.01"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>N</label><input type="number" id="g1_n" value="59"></div>
+        <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g1_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
+      </div>
+      <div class="fg">
+        <label>σ ângulo de fase (°)</label>
+        <input type="number" id="g1_pha_sd" value="" step="0.1" placeholder="Opcional">
+        <div class="phase-hint">Quando informado, o σ do ângulo de fase entra no cálculo por método delta e ganha mais peso conforme N aumenta.</div>
+      </div>
+
+      <hr>
+
+      <div class="group-header"><span class="dot" style="background:#f25f5c"></span>Grupo 2</div>
+      <div class="g2">
+        <div class="fg"><label>Média R/H</label><input type="number" id="g2_mr" value="253.52" step="0.01"></div>
+        <div class="fg"><label>Média Xc/H</label><input type="number" id="g2_mx" value="28.60" step="0.01"></div>
+        <div class="fg"><label>σ R/H</label><input type="number" id="g2_sr" value="31.68" step="0.01"></div>
+        <div class="fg"><label>σ Xc/H</label><input type="number" id="g2_sx" value="4.34" step="0.01"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>N</label><input type="number" id="g2_n" value="33"></div>
+        <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g2_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
+      </div>
+      <div class="fg">
+        <label>σ ângulo de fase (°)</label>
+        <input type="number" id="g2_pha_sd" value="" step="0.1" placeholder="Opcional">
+        <div class="phase-hint">Mais dados de grupo reduzem a dependência da leitura visual da imagem.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Detecção</div>
+      <div class="fg">
+        <label>Limiar de tinta (0-255)</label>
+        <div class="thr-row">
+          <input type="range" id="threshold" min="20" max="235" value="140">
+          <span class="thr-val" id="thrVal">140</span>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>Pixels mínimos</label><input type="number" id="minPx" value="32" step="4"></div>
+        <div class="fg"><label>Máx. elipses</label><input type="number" id="maxEllipses" value="24" step="1"></div>
+      </div>
+      <div class="fg">
+        <label>Tipo de elipse simulada</label>
+        <select id="ellType">
+          <option value="tolerance">Tolerância 95% (indivíduos)</option>
+          <option value="confidence">Confiança 95% (média)</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="autoDetectAll()">Detectar eixos + elipses</button>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="run()">Detectar elipses</button>
+        <button class="btn btn-ghost" onclick="clearAll()">Limpar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Ajuste Manual</div>
+      <div id="editStatus" class="status-msg msg-info">
+        Selecione uma elipse na tabela ou no canvas. Arraste o centro para mover, as alças dos eixos para redimensionar e a alça externa para rotacionar.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-warn" onclick="duplicateSelected()">Duplicar</button>
+        <button class="btn btn-ghost" onclick="deleteSelected()">Remover</button>
+      </div>
+      <div class="edit-hint">A tabela é atualizada ao ajustar a elipse. Isso permite alinhar a previsão exatamente sobre as elipses impressas na imagem.</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="canvas-wrap">
+      <canvas id="cv" width="880" height="620"></canvas>
+      <p class="canvas-hint">
+        <span class="green">verde</span> = elipses detectadas/editáveis &nbsp;|&nbsp;
+        <span class="yellow">amarelo</span> = seleção e alças &nbsp;|&nbsp;
+        <span>tracejado azul/vermelho</span> = previsão BIVA calculada pelos dados do grupo
+      </p>
+    </div>
+
+    <div class="results">
+      <div class="card-title">Elipses e estimativas</div>
+      <div id="output">
+        <div class="empty-state">Carregue uma imagem e clique em Detectar eixos + elipses.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let img = null;
+let plotBounds = null;
+let ellipses = [];
+let selectedEllipseId = null;
+let dragState = null;
+let nextEllipseId = 1;
+
+const gv = id => parseFloat(document.getElementById(id).value);
+const gi = id => parseInt(document.getElementById(id).value, 10);
+const gvn = id => {
+  const v = document.getElementById(id).value.trim();
+  return v === '' ? null : parseFloat(v);
+};
+
+document.getElementById('threshold').addEventListener('input', e => {
+  document.getElementById('thrVal').textContent = e.target.value;
+});
+
+document.querySelectorAll('input, select').forEach(el => {
+  if (el.id !== 'imgUpload' && el.id !== 'threshold') {
+    el.addEventListener('input', () => {
+      if (ellipses.length) renderAll();
+    });
+  }
+});
+
+document.getElementById('imgUpload').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = ev => {
+    const im = new Image();
+    im.onload = () => {
+      img = im;
+      ellipses = [];
+      selectedEllipseId = null;
+      plotBounds = null;
+      const maxW = Math.min(im.width, 980);
+      cv.width = maxW;
+      cv.height = Math.round(im.height * maxW / im.width);
+      drawBg();
+      setAxisStatus('Imagem carregada. Use a detecção automática para localizar eixos e elipses.', false);
+      setEditStatus('Nenhuma elipse selecionada.', 'info');
+      document.getElementById('output').innerHTML =
+        '<div class="empty-state">Imagem carregada. Clique em Detectar eixos + elipses.</div>';
+    };
+    im.src = ev.target.result;
+  };
+  rd.readAsDataURL(f);
+});
+
+cv.addEventListener('pointerdown', onPointerDown);
+cv.addEventListener('pointermove', onPointerMove);
+window.addEventListener('pointerup', onPointerUp);
+cv.addEventListener('pointerleave', () => {
+  if (!dragState) cv.style.cursor = 'crosshair';
+});
+
+function setAxisStatus(text, active) {
+  const el = document.getElementById('axisStatus');
+  el.className = active ? 'axis-detect-info active' : 'axis-detect-info';
+  el.textContent = text;
+}
+
+function setEditStatus(text, type = 'info') {
+  const el = document.getElementById('editStatus');
+  el.className = `status-msg msg-${type}`;
+  el.textContent = text;
+}
+
+function drawBg() {
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (img) {
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+  } else {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#8bb6ff';
+    ctx.font = '14px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Carregue uma imagem BIVA', cv.width / 2, cv.height / 2);
+  }
+}
+
+function toPixel(vx, vy) {
+  const xMin = gv('xMin'), xMax = gv('xMax'), yMin = gv('yMin'), yMax = gv('yMax');
+  const b = plotBounds;
+  if (b) {
+    return {
+      x: b.left + ((vx - xMin) / (xMax - xMin)) * (b.right - b.left),
+      y: b.bottom - ((vy - yMin) / (yMax - yMin)) * (b.bottom - b.top)
+    };
+  }
+  return {
+    x: ((vx - xMin) / (xMax - xMin)) * cv.width,
+    y: cv.height - ((vy - yMin) / (yMax - yMin)) * cv.height
+  };
+}
+
+function toData(px, py) {
+  const xMin = gv('xMin'), xMax = gv('xMax'), yMin = gv('yMin'), yMax = gv('yMax');
+  const b = plotBounds;
+  if (b) {
+    return {
+      x: xMin + ((px - b.left) / (b.right - b.left)) * (xMax - xMin),
+      y: yMin + ((b.bottom - py) / (b.bottom - b.top)) * (yMax - yMin)
+    };
+  }
+  return {
+    x: xMin + (px / cv.width) * (xMax - xMin),
+    y: yMax - (py / cv.height) * (yMax - yMin)
+  };
+}
+
+function getGrayImage() {
+  const W = cv.width, H = cv.height;
+  const oc = document.createElement('canvas');
+  oc.width = W;
+  oc.height = H;
+  oc.getContext('2d').drawImage(img, 0, 0, W, H);
+  const { data } = oc.getContext('2d').getImageData(0, 0, W, H);
+  const gray = new Float32Array(W * H);
+  let sum = 0;
+  for (let i = 0; i < W * H; i++) {
+    const g = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+    gray[i] = g;
+    sum += g;
+  }
+  return { gray, avg: sum / (W * H), W, H };
+}
+
+function detectAxes() {
+  if (!img) {
+    alert('Carregue uma imagem primeiro.');
+    return false;
+  }
+
+  const { gray, avg, W, H } = getGrayImage();
+  const isLightBg = avg > 128;
+  const axisThr = isLightBg ? Math.min(150, avg - 30) : Math.max(110, avg + 30);
+  const isAxisPx = isLightBg ? (g => g < axisThr) : (g => g > axisThr);
+
+  const hProj = new Float32Array(H);
+  const vProj = new Float32Array(W);
+  for (let y = 0; y < H; y++) {
+    let c = 0;
+    for (let x = 0; x < W; x++) if (isAxisPx(gray[y * W + x])) c++;
+    hProj[y] = c / W;
+  }
+  for (let x = 0; x < W; x++) {
+    let c = 0;
+    for (let y = 0; y < H; y++) if (isAxisPx(gray[y * W + x])) c++;
+    vProj[x] = c / H;
+  }
+
+  const bestIndex = (arr, start, end, prefer) => {
+    let best = -1, bestScore = -Infinity;
+    const s = Math.max(0, Math.floor(start)), e = Math.min(arr.length - 1, Math.floor(end));
+    for (let i = s; i <= e; i++) {
+      const local = (arr[Math.max(s, i - 1)] + arr[i] + arr[Math.min(e, i + 1)]) / 3;
+      const edgeBias = prefer === 'low' ? (e - i) / Math.max(1, e - s) : (i - s) / Math.max(1, e - s);
+      const score = local + edgeBias * 0.025;
+      if (score > bestScore) {
+        bestScore = score;
+        best = i;
+      }
+    }
+    return { index: best, score: bestScore };
+  };
+
+  let left = bestIndex(vProj, W * 0.02, W * 0.42, 'low');
+  let right = bestIndex(vProj, W * 0.55, W * 0.98, 'high');
+  let top = bestIndex(hProj, H * 0.02, H * 0.42, 'low');
+  let bottom = bestIndex(hProj, H * 0.52, H * 0.98, 'high');
+
+  let leftPx = left.index, rightPx = right.index, topPx = top.index, bottomPx = bottom.index;
+  const weakVertical = Math.max(left.score, right.score) < 0.10;
+  const weakHorizontal = Math.max(top.score, bottom.score) < 0.10;
+
+  if (rightPx - leftPx < W * 0.35 || weakVertical) {
+    leftPx = Math.floor(W * 0.08);
+    rightPx = Math.floor(W * 0.96);
+  }
+  if (bottomPx - topPx < H * 0.35 || weakHorizontal) {
+    topPx = Math.floor(H * 0.06);
+    bottomPx = Math.floor(H * 0.92);
+  }
+
+  plotBounds = {
+    left: Math.max(0, Math.min(leftPx, rightPx - 12)),
+    right: Math.min(W, Math.max(rightPx, leftPx + 12)),
+    top: Math.max(0, Math.min(topPx, bottomPx - 12)),
+    bottom: Math.min(H, Math.max(bottomPx, topPx + 12))
+  };
+
+  renderAll();
+  setAxisStatus(
+    `Eixos detectados: L=${plotBounds.left}px, R=${plotBounds.right}px, T=${plotBounds.top}px, B=${plotBounds.bottom}px. Fundo ${isLightBg ? 'claro' : 'escuro'}.`,
+    true
+  );
+  return true;
+}
+
+function autoDetectAll() {
+  if (!img) {
+    alert('Carregue uma imagem primeiro.');
+    return;
+  }
+  detectAxes();
+  run();
+}
+
+function pca(pts) {
+  const n = pts.length;
+  if (n < 6) return null;
+  let sx = 0, sy = 0;
+  for (const [x, y] of pts) {
+    sx += x;
+    sy += y;
+  }
+  const cx = sx / n, cy = sy / n;
+  let c00 = 0, c01 = 0, c11 = 0;
+  for (const [x, y] of pts) {
+    c00 += (x - cx) ** 2;
+    c01 += (x - cx) * (y - cy);
+    c11 += (y - cy) ** 2;
+  }
+  c00 /= n;
+  c01 /= n;
+  c11 /= n;
+  const tr = c00 + c11;
+  const det = c00 * c11 - c01 * c01;
+  const disc = Math.sqrt(Math.max(0, tr * tr / 4 - det));
+  const l1 = tr / 2 + disc;
+  const l2 = Math.max(0, tr / 2 - disc);
+  const theta = Math.atan2(2 * c01, c00 - c11) / 2;
+  const a = Math.sqrt(Math.max(0.0001, 2 * l1));
+  const b = Math.sqrt(Math.max(0.0001, 2 * l2));
+  return { cx, cy, theta, a, b, bOverA: a > 0 ? b / a : 0 };
+}
+
+function ellipseResidual(pts, e) {
+  const ct = Math.cos(e.theta), st = Math.sin(e.theta);
+  let sum = 0, used = 0;
+  for (let i = 0; i < pts.length; i += Math.max(1, Math.floor(pts.length / 600))) {
+    const x = pts[i][0] - e.cx, y = pts[i][1] - e.cy;
+    const u = x * ct + y * st;
+    const v = -x * st + y * ct;
+    const r = Math.sqrt((u / e.a) ** 2 + (v / e.b) ** 2);
+    sum += Math.abs(r - 1);
+    used++;
+  }
+  return used ? sum / used : 1;
+}
+
+function findComponents(bin, grayArr, W, H) {
+  const labels = new Int32Array(W * H).fill(-1);
+  const comps = [];
+  for (let idx0 = 0; idx0 < W * H; idx0++) {
+    if (!bin[idx0] || labels[idx0] !== -1) continue;
+    const comp = { pix: [], gSum: 0, minX: W, maxX: 0, minY: H, maxY: 0 };
+    const q = [idx0];
+    labels[idx0] = comps.length;
+    let h = 0;
+    while (h < q.length) {
+      const cur = q[h++];
+      const cx = cur % W, cy = Math.floor(cur / W);
+      comp.pix.push([cx, cy]);
+      comp.gSum += grayArr[cur];
+      comp.minX = Math.min(comp.minX, cx);
+      comp.maxX = Math.max(comp.maxX, cx);
+      comp.minY = Math.min(comp.minY, cy);
+      comp.maxY = Math.max(comp.maxY, cy);
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const nx = cx + dx, ny = cy + dy;
+          if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+          const ni = ny * W + nx;
+          if (bin[ni] && labels[ni] === -1) {
+            labels[ni] = comps.length;
+            q.push(ni);
+          }
+        }
+      }
+    }
+    comp.meanGray = comp.gSum / comp.pix.length;
+    comps.push(comp);
+  }
+  return comps;
+}
+
+function dilateMask(bin, W, H) {
+  const out = new Uint8Array(W * H);
+  for (let y = 1; y < H - 1; y++) {
+    for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x;
+      if (bin[i]) {
+        out[i] = 1;
+        continue;
+      }
+      let hit = false;
+      for (let dy = -1; dy <= 1 && !hit; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if (bin[(y + dy) * W + x + dx]) {
+            hit = true;
+            break;
+          }
+        }
+      }
+      out[i] = hit ? 1 : 0;
+    }
+  }
+  return out;
+}
+
+function buildInkMask(gray, W, H, bounds, thr) {
+  const avg = gray.reduce((a, b) => a + b, 0) / gray.length;
+  const isLightBg = avg > 128;
+  const bin = new Uint8Array(W * H);
+  const edgeThr = 36;
+  const axisPad = 3;
+  for (let y = Math.max(1, bounds.top + 1); y < Math.min(H - 1, bounds.bottom - 1); y++) {
+    for (let x = Math.max(1, bounds.left + 1); x < Math.min(W - 1, bounds.right - 1); x++) {
+      if (Math.abs(x - bounds.left) <= axisPad || Math.abs(x - bounds.right) <= axisPad ||
+          Math.abs(y - bounds.top) <= axisPad || Math.abs(y - bounds.bottom) <= axisPad) {
+        continue;
+      }
+      const i = y * W + x;
+      const g = gray[i];
+      const ink = isLightBg ? g < thr : g > thr;
+      const gx = -gray[(y - 1) * W + x - 1] - 2 * gray[y * W + x - 1] - gray[(y + 1) * W + x - 1] +
+                  gray[(y - 1) * W + x + 1] + 2 * gray[y * W + x + 1] + gray[(y + 1) * W + x + 1];
+      const gy = -gray[(y - 1) * W + x - 1] - 2 * gray[(y - 1) * W + x] - gray[(y - 1) * W + x + 1] +
+                  gray[(y + 1) * W + x - 1] + 2 * gray[(y + 1) * W + x] + gray[(y + 1) * W + x + 1];
+      const edge = Math.sqrt(gx * gx + gy * gy) > edgeThr && Math.abs(g - avg) > 12;
+      if (ink || edge) bin[i] = 1;
+    }
+  }
+  return dilateMask(bin, W, H);
+}
+
+function run() {
+  if (!img) {
+    alert('Carregue uma imagem primeiro.');
+    return;
+  }
+  if (!plotBounds) detectAxes();
+
+  const { gray, W, H } = getGrayImage();
+  const thr = gi('threshold');
+  const minPx = gi('minPx');
+  const maxEllipses = Math.max(1, gi('maxEllipses') || 24);
+  const b = plotBounds || {
+    left: Math.floor(W * 0.06),
+    right: Math.floor(W * 0.96),
+    top: Math.floor(H * 0.06),
+    bottom: Math.floor(H * 0.92)
+  };
+  const bin = buildInkMask(gray, W, H, b, thr);
+  const comps = findComponents(bin, gray, W, H);
+  const xMin = gv('xMin'), xMax = gv('xMax'), yMin = gv('yMin'), yMax = gv('yMax');
+  const xR = xMax - xMin, yR = yMax - yMin;
+
+  const candidates = [];
+  for (const c of comps) {
+    if (c.pix.length < minPx) continue;
+    const boxW = c.maxX - c.minX + 1;
+    const boxH = c.maxY - c.minY + 1;
+    if (boxW < 8 || boxH < 8) continue;
+    const pts = c.pix.map(([px, py]) => {
+      const d = toData(px, py);
+      return [d.x, d.y];
+    });
+    const e = pca(pts);
+    if (!e) continue;
+    if (e.bOverA < 0.035 || e.a < xR * 0.006 || e.b < yR * 0.006) continue;
+    const marginX = xR * 0.015, marginY = yR * 0.015;
+    if (e.cx < xMin - marginX || e.cx > xMax + marginX || e.cy < yMin - marginY || e.cy > yMax + marginY) continue;
+    const resid = ellipseResidual(pts, e);
+    const sizeScore = Math.min(1, c.pix.length / 900);
+    const shapeScore = Math.max(0, 1 - resid * 1.7);
+    const areaScore = Math.min(1, (boxW * boxH) / ((b.right - b.left) * (b.bottom - b.top) * 0.18));
+    const score = 0.48 * shapeScore + 0.32 * sizeScore + 0.20 * areaScore;
+    if (score < 0.12) continue;
+    candidates.push({
+      id: nextEllipseId++,
+      cx: e.cx,
+      cy: e.cy,
+      a: e.a,
+      b: e.b,
+      theta: e.theta,
+      size: c.pix.length,
+      meanGray: c.meanGray,
+      quality: score,
+      residual: resid,
+      source: 'auto'
+    });
+  }
+
+  ellipses = dedupeEllipses(candidates)
+    .sort((a, b) => b.quality - a.quality || b.size - a.size)
+    .slice(0, maxEllipses);
+  selectedEllipseId = ellipses[0]?.id ?? null;
+
+  if (ellipses.length) {
+    setEditStatus(`${ellipses.length} hipótese(s) de elipse encontradas. A selecionada pode ser ajustada no canvas.`, 'ok');
+  } else {
+    setEditStatus('Nenhuma elipse encontrada. Ajuste o limiar ou reduza o mínimo de pixels.', 'warn');
+  }
+  renderAll();
+}
+
+function dedupeEllipses(items) {
+  const kept = [];
+  for (const e of items) {
+    const dup = kept.find(k => {
+      const dc = Math.hypot((e.cx - k.cx) / Math.max(1, k.a), (e.cy - k.cy) / Math.max(1, k.b));
+      const da = Math.abs(e.a - k.a) / Math.max(1, k.a);
+      const db = Math.abs(e.b - k.b) / Math.max(1, k.b);
+      return dc < 0.20 && da < 0.24 && db < 0.24;
+    });
+    if (!dup) {
+      kept.push(e);
+    } else if (e.quality > dup.quality) {
+      Object.assign(dup, e, { id: dup.id });
+    }
+  }
+  return kept;
+}
+
+function getGroups() {
+  return [
+    { id: 1, mr: gv('g1_mr'), mx: gv('g1_mx'), sr: gv('g1_sr'), sx: gv('g1_sx'), n: gi('g1_n'),
+      phaMean: gvn('g1_pha_mean'), phaSd: gvn('g1_pha_sd'), color: '#4f8ef7' },
+    { id: 2, mr: gv('g2_mr'), mx: gv('g2_mx'), sr: gv('g2_sr'), sx: gv('g2_sx'), n: gi('g2_n'),
+      phaMean: gvn('g2_pha_mean'), phaSd: gvn('g2_pha_sd'), color: '#f25f5c' }
+  ];
+}
+
+function matchGroup(e, groups) {
+  const xR = gv('xMax') - gv('xMin');
+  const yR = gv('yMax') - gv('yMin');
+  let best = null, bestDist = Infinity;
+  for (const g of groups) {
+    const d = Math.hypot((e.cx - g.mr) / xR, (e.cy - g.mx) / yR);
+    if (d < bestDist) {
+      bestDist = d;
+      best = g;
+    }
+  }
+  return { group: best, distance: bestDist };
+}
+
+function rhoFromAngle(theta, sdR, sdXc) {
+  if (Math.abs(sdR * sdXc) < 1e-8) return null;
+  const t2 = Math.tan(2 * theta);
+  const rho = t2 * (sdR * sdR - sdXc * sdXc) / (2 * sdR * sdXc);
+  return Math.max(-0.999, Math.min(0.999, rho));
+}
+
+function rhoFromPhaseAngle(mr, mx, sr, sx, sdAlphaDeg) {
+  if (!sdAlphaDeg || sdAlphaDeg <= 0) return null;
+  const sdAlpha = sdAlphaDeg * Math.PI / 180;
+  const r2 = mr * mr + mx * mx;
+  const denom = 2 * mr * mx * sr * sx;
+  if (Math.abs(denom) < 1e-10 || r2 < 1e-10) return null;
+  const numerator = mx * mx * sr * sr + mr * mr * sx * sx - sdAlpha * sdAlpha * r2 * r2;
+  return Math.max(-0.999, Math.min(0.999, numerator / denom));
+}
+
+function combineRho(rhoImage, rhoPhase, N, quality) {
+  if (rhoImage === null) return rhoPhase;
+  if (rhoPhase === null) return rhoImage;
+  const wImage = 0.45 + Math.max(0.05, quality || 0.35);
+  const wPhase = Math.sqrt(Math.max(1, N || 1) / 30);
+  return (wImage * rhoImage + wPhase * rhoPhase) / (wImage + wPhase);
+}
+
+function enrichEllipses() {
+  const groups = getGroups();
+  return ellipses.map(e => {
+    const { group, distance } = matchGroup(e, groups);
+    const rhoImage = group ? rhoFromAngle(e.theta, group.sr, group.sx) : null;
+    const rhoPhase = group ? rhoFromPhaseAngle(group.mr, group.mx, group.sr, group.sx, group.phaSd) : null;
+    const rhoCombined = group ? combineRho(rhoImage, rhoPhase, group.n, e.quality) : null;
+    return { ...e, group, distance, rhoImage, rhoPhase, rhoCombined };
+  });
+}
+
+function ellipsePoint(e, t, scale = 1) {
+  const ct = Math.cos(e.theta), st = Math.sin(e.theta);
+  const x = e.cx + scale * (e.a * Math.cos(t) * ct - e.b * Math.sin(t) * st);
+  const y = e.cy + scale * (e.a * Math.cos(t) * st + e.b * Math.sin(t) * ct);
+  return toPixel(x, y);
+}
+
+function drawEllipsePath(e) {
+  ctx.beginPath();
+  for (let i = 0; i <= 240; i++) {
+    const p = ellipsePoint(e, (i / 240) * Math.PI * 2);
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  }
+}
+
+function drawDetectedEllipse(e, selected) {
+  drawEllipsePath(e);
+  ctx.strokeStyle = selected ? '#f4b942' : '#43d9a2';
+  ctx.lineWidth = selected ? 2.8 : 1.8;
+  ctx.setLineDash(selected ? [] : [2, 2]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const c = toPixel(e.cx, e.cy);
+  ctx.fillStyle = selected ? '#f4b942' : '#43d9a2';
+  ctx.beginPath();
+  ctx.arc(c.x, c.y, selected ? 4 : 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`#${e.id}`, c.x + 6, c.y - 6);
+}
+
+function drawHandles(e) {
+  const handles = getHandles(e);
+  ctx.save();
+  ctx.lineWidth = 1.5;
+  for (const h of handles) {
+    ctx.beginPath();
+    if (h.kind === 'rotate') {
+      ctx.arc(h.x, h.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#0f1117';
+      ctx.strokeStyle = '#f4b942';
+      ctx.fill();
+      ctx.stroke();
+    } else if (h.kind === 'center') {
+      ctx.rect(h.x - 5, h.y - 5, 10, 10);
+      ctx.fillStyle = '#f4b942';
+      ctx.strokeStyle = '#0f1117';
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.rect(h.x - 5, h.y - 5, 10, 10);
+      ctx.fillStyle = h.kind === 'major' ? '#8bb6ff' : '#43d9a2';
+      ctx.strokeStyle = '#0f1117';
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  const majA = getDataEndpoint(e, e.a, 0);
+  const majB = getDataEndpoint(e, -e.a, 0);
+  const minA = getDataEndpoint(e, 0, e.b);
+  const minB = getDataEndpoint(e, 0, -e.b);
+  const p1 = toPixel(majA.x, majA.y), p2 = toPixel(majB.x, majB.y);
+  const p3 = toPixel(minA.x, minA.y), p4 = toPixel(minB.x, minB.y);
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = '#f4b942';
+  ctx.beginPath();
+  ctx.moveTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.moveTo(p3.x, p3.y);
+  ctx.lineTo(p4.x, p4.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function getDataEndpoint(e, u, v) {
+  const ct = Math.cos(e.theta), st = Math.sin(e.theta);
+  return {
+    x: e.cx + u * ct - v * st,
+    y: e.cy + u * st + v * ct
+  };
+}
+
+function getHandles(e) {
+  const majorP = getDataEndpoint(e, e.a, 0);
+  const majorN = getDataEndpoint(e, -e.a, 0);
+  const minorP = getDataEndpoint(e, 0, e.b);
+  const minorN = getDataEndpoint(e, 0, -e.b);
+  const rot = getDataEndpoint(e, e.a * 1.16, 0);
+  const center = toPixel(e.cx, e.cy);
+  return [
+    { kind: 'center', sign: 0, ...center },
+    { kind: 'major', sign: 1, ...toPixel(majorP.x, majorP.y) },
+    { kind: 'major', sign: -1, ...toPixel(majorN.x, majorN.y) },
+    { kind: 'minor', sign: 1, ...toPixel(minorP.x, minorP.y) },
+    { kind: 'minor', sign: -1, ...toPixel(minorN.x, minorN.y) },
+    { kind: 'rotate', sign: 1, ...toPixel(rot.x, rot.y) }
+  ];
+}
+
+function drawSimEllipse(mr, mx, sr, sx, rho, N, etype, color) {
+  if (rho === null) return;
+  const varR = sr * sr, varXc = sx * sx, cov = rho * sr * sx;
+  const tr = varR + varXc;
+  const det = varR * varXc - cov * cov;
+  const disc = Math.sqrt(Math.max(0, tr * tr - 4 * det));
+  const l1 = (tr + disc) / 2, l2 = Math.max(0, (tr - disc) / 2);
+  const theta = Math.atan2(2 * cov, varR - varXc) / 2;
+  let k2 = 5.991;
+  if (etype === 'confidence') k2 /= Math.max(1, N || 1);
+  const sf = Math.sqrt(k2);
+  const sim = { cx: mr, cy: mx, a: sf * Math.sqrt(l1), b: sf * Math.sqrt(l2), theta };
+  drawEllipsePath(sim);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  ctx.setLineDash([8, 5]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function renderAll() {
+  drawBg();
+  if (plotBounds) {
+    ctx.save();
+    ctx.strokeStyle = '#43d9a280';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 3]);
+    ctx.strokeRect(plotBounds.left, plotBounds.top, plotBounds.right - plotBounds.left, plotBounds.bottom - plotBounds.top);
+    ctx.restore();
+  }
+
+  const enriched = enrichEllipses();
+  const bestByGroup = [];
+  for (const e of enriched) {
+    if (!e.group || e.rhoCombined === null) continue;
+    const current = bestByGroup[e.group.id];
+    const score = e.quality / Math.max(0.06, e.distance + 0.04);
+    if (!current || score > current._rank) bestByGroup[e.group.id] = { ...e, _rank: score };
+  }
+  for (const e of bestByGroup.filter(Boolean)) {
+    drawSimEllipse(e.group.mr, e.group.mx, e.group.sr, e.group.sx, e.rhoCombined, e.group.n, document.getElementById('ellType').value, e.group.color);
+  }
+
+  for (const e of enriched) drawDetectedEllipse(e, e.id === selectedEllipseId);
+  const selected = enriched.find(e => e.id === selectedEllipseId);
+  if (selected) drawHandles(selected);
+  showTable(enriched);
+}
+
+function pointerPos(ev) {
+  const r = cv.getBoundingClientRect();
+  return {
+    x: (ev.clientX - r.left) * (cv.width / r.width),
+    y: (ev.clientY - r.top) * (cv.height / r.height)
+  };
+}
+
+function hitTest(pos) {
+  const selected = ellipses.find(e => e.id === selectedEllipseId);
+  if (selected) {
+    for (const h of getHandles(selected)) {
+      if (Math.hypot(pos.x - h.x, pos.y - h.y) <= 10) return { ellipse: selected, handle: h.kind };
+    }
+  }
+
+  const data = toData(pos.x, pos.y);
+  for (let i = ellipses.length - 1; i >= 0; i--) {
+    const e = ellipses[i];
+    const ct = Math.cos(e.theta), st = Math.sin(e.theta);
+    const x = data.x - e.cx, y = data.y - e.cy;
+    const u = x * ct + y * st;
+    const v = -x * st + y * ct;
+    const norm = Math.sqrt((u / e.a) ** 2 + (v / e.b) ** 2);
+    if (Math.abs(norm - 1) < 0.20 || norm < 0.55) return { ellipse: e, handle: norm < 0.55 ? 'center' : 'body' };
+  }
+  return null;
+}
+
+function onPointerDown(ev) {
+  if (!ellipses.length) return;
+  const pos = pointerPos(ev);
+  const hit = hitTest(pos);
+  if (!hit) {
+    selectedEllipseId = null;
+    renderAll();
+    return;
+  }
+  selectedEllipseId = hit.ellipse.id;
+  const data = toData(pos.x, pos.y);
+  dragState = {
+    id: hit.ellipse.id,
+    handle: hit.handle === 'body' ? 'center' : hit.handle,
+    startData: data,
+    original: { ...hit.ellipse }
+  };
+  cv.setPointerCapture(ev.pointerId);
+  renderAll();
+  ev.preventDefault();
+}
+
+function onPointerMove(ev) {
+  const pos = pointerPos(ev);
+  if (!dragState) {
+    const hit = hitTest(pos);
+    cv.style.cursor = hit ? (hit.handle === 'rotate' ? 'grab' : 'move') : 'crosshair';
+    return;
+  }
+
+  const e = ellipses.find(item => item.id === dragState.id);
+  if (!e) return;
+  const d = toData(pos.x, pos.y);
+  const orig = dragState.original;
+  const minA = Math.max(0.1, (gv('xMax') - gv('xMin')) * 0.004);
+  const minB = Math.max(0.1, (gv('yMax') - gv('yMin')) * 0.004);
+
+  if (dragState.handle === 'center') {
+    e.cx = orig.cx + (d.x - dragState.startData.x);
+    e.cy = orig.cy + (d.y - dragState.startData.y);
+  } else if (dragState.handle === 'major') {
+    const ct = Math.cos(orig.theta), st = Math.sin(orig.theta);
+    const vx = d.x - orig.cx, vy = d.y - orig.cy;
+    e.a = Math.max(minA, Math.abs(vx * ct + vy * st));
+  } else if (dragState.handle === 'minor') {
+    const ct = Math.cos(orig.theta), st = Math.sin(orig.theta);
+    const vx = d.x - orig.cx, vy = d.y - orig.cy;
+    e.b = Math.max(minB, Math.abs(-vx * st + vy * ct));
+  } else if (dragState.handle === 'rotate') {
+    e.theta = Math.atan2(d.y - orig.cy, d.x - orig.cx);
+  }
+  e.source = 'manual';
+  e.quality = Math.max(e.quality || 0.45, 0.72);
+  renderAll();
+  ev.preventDefault();
+}
+
+function onPointerUp(ev) {
+  if (!dragState) return;
+  const e = ellipses.find(item => item.id === dragState.id);
+  dragState = null;
+  if (e) {
+    setEditStatus(`Elipse #${e.id} ajustada manualmente. ρ e matriz foram recalculados.`, 'ok');
+  }
+  try { cv.releasePointerCapture(ev.pointerId); } catch (_) {}
+}
+
+function selectEllipse(id) {
+  selectedEllipseId = id;
+  const e = ellipses.find(item => item.id === id);
+  if (e) setEditStatus(`Elipse #${id} selecionada. Ajuste pelas alças no canvas.`, 'info');
+  renderAll();
+}
+
+function duplicateSelected() {
+  const e = ellipses.find(item => item.id === selectedEllipseId);
+  if (!e) {
+    setEditStatus('Selecione uma elipse antes de duplicar.', 'warn');
+    return;
+  }
+  const copy = { ...e, id: nextEllipseId++, cx: e.cx + e.a * 0.04, cy: e.cy + e.b * 0.04, source: 'manual' };
+  ellipses.unshift(copy);
+  selectedEllipseId = copy.id;
+  setEditStatus(`Elipse #${e.id} duplicada como #${copy.id}.`, 'ok');
+  renderAll();
+}
+
+function deleteSelected() {
+  if (selectedEllipseId === null) {
+    setEditStatus('Selecione uma elipse antes de remover.', 'warn');
+    return;
+  }
+  const removed = selectedEllipseId;
+  ellipses = ellipses.filter(e => e.id !== selectedEllipseId);
+  selectedEllipseId = ellipses[0]?.id ?? null;
+  setEditStatus(`Elipse #${removed} removida.`, 'ok');
+  renderAll();
+}
+
+function clearAll() {
+  ellipses = [];
+  selectedEllipseId = null;
+  dragState = null;
+  plotBounds = null;
+  drawBg();
+  setAxisStatus('Limpo. Carregue uma imagem ou detecte os eixos novamente.', false);
+  setEditStatus('Nenhuma elipse selecionada.', 'info');
+  document.getElementById('output').innerHTML =
+    '<div class="empty-state">Limpo. Carregue uma imagem e clique em Detectar eixos + elipses.</div>';
+}
+
+function fmt(v, digits = 2) {
+  return Number.isFinite(v) ? v.toFixed(digits) : 'N/A';
+}
+
+function showTable(results) {
+  if (!results.length) {
+    const axisNote = plotBounds
+      ? '<span class="badge badge-green">eixos detectados</span>'
+      : '<span class="badge badge-yellow">sem eixos</span>';
+    document.getElementById('output').innerHTML =
+      `<div class="status-msg msg-warn">${axisNote} Nenhuma elipse detectada ainda.</div>`;
+    return;
+  }
+
+  const hasPhase = results.some(r => r.rhoPhase !== null);
+  let rows = '';
+  for (const r of results) {
+    const g = r.group;
+    const col = g ? g.color : '#8190ad';
+    const cov = g && r.rhoCombined !== null ? r.rhoCombined * g.sr * g.sx : null;
+    const varR = g ? g.sr * g.sr : null;
+    const varX = g ? g.sx * g.sx : null;
+    const source = r.source === 'manual'
+      ? '<span class="badge badge-yellow">manual</span>'
+      : '<span class="badge badge-green">auto</span>';
+    rows += `<tr class="${r.id === selectedEllipseId ? 'selected-row' : ''}">
+      <td><button class="mini-btn" onclick="selectEllipse(${r.id})">#${r.id}</button></td>
+      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>${g ? `Grupo ${g.id}` : '-'}</td>
+      <td class="mono">${fmt(r.cx)}, ${fmt(r.cy)}</td>
+      <td class="mono">a=${fmt(r.a)}<br>b=${fmt(r.b)}</td>
+      <td class="mono">${fmt(r.theta * 180 / Math.PI, 2)}°</td>
+      <td>${source}<br><span class="rho-mini">q=${fmt(r.quality, 2)} px=${r.size || '-'}</span></td>
+      <td><span class="rho-mini">${r.rhoImage !== null ? fmt(r.rhoImage, 4) : 'N/A'}</span><br><span class="rho-mini">imagem</span></td>
+      ${hasPhase ? `<td><span class="rho-mini" style="color:var(--yellow)">${r.rhoPhase !== null ? fmt(r.rhoPhase, 4) : '-'}</span><br><span class="rho-mini">fase</span></td>` : ''}
+      <td><span class="rho-chip">${r.rhoCombined !== null ? fmt(r.rhoCombined, 4) : 'N/A'}</span></td>
+      <td class="matrix-cell">[${varR !== null ? fmt(varR, 3) : '-'} &nbsp; ${cov !== null ? fmt(cov, 3) : '-'}]<br>[${cov !== null ? fmt(cov, 3) : '-'} &nbsp; ${varX !== null ? fmt(varX, 3) : '-'}]</td>
+    </tr>`;
+  }
+
+  const axisNote = plotBounds
+    ? `<span class="badge badge-green">eixos detectados</span> área ${plotBounds.right - plotBounds.left}x${plotBounds.bottom - plotBounds.top}px`
+    : '<span class="badge badge-yellow">sem calibração automática</span>';
+  const selected = selectedEllipseId !== null ? `Elipse #${selectedEllipseId} selecionada.` : 'Nenhuma elipse selecionada.';
+
+  document.getElementById('output').innerHTML = `
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>Sel.</th>
+          <th>Grupo</th>
+          <th>Centro</th>
+          <th>Semieixos</th>
+          <th>Ângulo</th>
+          <th>Origem</th>
+          <th>ρ img</th>
+          ${hasPhase ? '<th>ρ fase</th>' : ''}
+          <th>ρ final</th>
+          <th>Matriz Σ</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="status-msg msg-info" style="margin-top:10px">
+      ${axisNote} | ${selected} O ρ final combina a leitura da elipse com σ do ângulo de fase quando esse dado é informado, ponderado por N.
+    </div>
+  `;
+}
+
+drawBg();
+</script>
+</body>
+</html>
