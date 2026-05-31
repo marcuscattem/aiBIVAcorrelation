@@ -311,6 +311,29 @@ tr:last-child td { border-bottom: none; }
   min-width: 118px;
 }
 
+.mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.mode-btn {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  color: #07111f;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
 .wide-btn {
   grid-column: 1 / -1;
 }
@@ -454,45 +477,6 @@ tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card">
-      <div class="card-title">Grupos</div>
-      <div class="group-header"><span class="dot" style="background:#4f8ef7"></span>Grupo 1</div>
-      <div class="g2">
-        <div class="fg"><label>Média R/H</label><input type="number" id="g1_mr" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>Média Xc/H</label><input type="number" id="g1_mx" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>σ R/H</label><input type="number" id="g1_sr" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>σ Xc/H</label><input type="number" id="g1_sx" value="" step="0.01" placeholder="Informe"></div>
-      </div>
-      <div class="g2">
-        <div class="fg"><label>N</label><input type="number" id="g1_n" value="" placeholder="Opcional"></div>
-        <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g1_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
-      </div>
-      <div class="fg">
-        <label>σ ângulo de fase (°)</label>
-        <input type="number" id="g1_pha_sd" value="" step="0.1" placeholder="Opcional">
-        <div class="phase-hint">Quando informado, o σ do ângulo de fase entra no cálculo por método delta e ganha mais peso conforme N aumenta.</div>
-      </div>
-
-      <hr>
-
-      <div class="group-header"><span class="dot" style="background:#f25f5c"></span>Grupo 2</div>
-      <div class="g2">
-        <div class="fg"><label>Média R/H</label><input type="number" id="g2_mr" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>Média Xc/H</label><input type="number" id="g2_mx" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>σ R/H</label><input type="number" id="g2_sr" value="" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>σ Xc/H</label><input type="number" id="g2_sx" value="" step="0.01" placeholder="Informe"></div>
-      </div>
-      <div class="g2">
-        <div class="fg"><label>N</label><input type="number" id="g2_n" value="" placeholder="Opcional"></div>
-        <div class="fg"><label>Â. fase médio (°)</label><input type="number" id="g2_pha_mean" value="" step="0.1" placeholder="Opcional"></div>
-      </div>
-      <div class="fg">
-        <label>σ ângulo de fase (°)</label>
-        <input type="number" id="g2_pha_sd" value="" step="0.1" placeholder="Opcional">
-        <div class="phase-hint">Mais dados de grupo reduzem a dependência da leitura visual da imagem.</div>
-      </div>
-    </div>
-
-    <div class="card">
       <div class="card-title">Detecção</div>
       <div class="fg">
         <label>Limiar de tinta (0-255)</label>
@@ -504,13 +488,6 @@ tr:last-child td { border-bottom: none; }
       <div class="g2">
         <div class="fg"><label>Pixels mínimos</label><input type="number" id="minPx" value="32" step="4"></div>
         <div class="fg"><label>Máx. elipses</label><input type="number" id="maxEllipses" value="24" step="1"></div>
-      </div>
-      <div class="fg">
-        <label>Tipo de elipse simulada</label>
-        <select id="ellType">
-          <option value="tolerance">Tolerância 95% (indivíduos)</option>
-          <option value="confidence">Confiança 95% (média)</option>
-        </select>
       </div>
       <button class="btn btn-primary" onclick="autoDetectAll()">Detectar eixos + elipses</button>
       <div class="btn-row">
@@ -536,23 +513,18 @@ tr:last-child td { border-bottom: none; }
     </div>
 
     <div class="card">
-      <div class="card-title">Criar Elipse</div>
-      <div class="g2">
-        <div class="fg"><label>Centro R/H</label><input type="number" id="new_cx" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>Centro Xc/H</label><input type="number" id="new_cy" step="0.01" placeholder="Informe"></div>
-        <div class="fg"><label>Semieixo maior</label><input type="number" id="new_a" step="0.01" min="0" placeholder="Informe"></div>
-        <div class="fg"><label>Semieixo menor</label><input type="number" id="new_b" step="0.01" min="0" placeholder="Informe"></div>
+      <div class="card-title">Seletor de Elipse</div>
+      <div class="mode-tabs">
+        <button id="modeSelect" class="mode-btn active" onclick="setMarkMode('select')">Selecionar</button>
+        <button id="modeContour" class="mode-btn" onclick="setMarkMode('contour')">Contorno</button>
+        <button id="modeAxes" class="mode-btn" onclick="setMarkMode('axes')">4 pontas</button>
       </div>
-      <div class="g2">
-        <div class="fg"><label>Rotação (°)</label><input type="number" id="new_theta" value="0" step="0.1"></div>
-        <div class="fg"><label>Nome</label><input type="text" id="new_label" placeholder="Opcional"></div>
+      <div id="markStatus" class="axis-detect-info">
+        Selecione Contorno para marcar pelo menos 5 pontos, ou 4 pontas para clicar nas extremidades dos eixos maior e menor.
       </div>
-      <button class="btn btn-primary" onclick="createEllipseFromInputs()">Montar elipse</button>
-      <div class="btn-row">
-        <button class="btn btn-secondary" onclick="createEllipseFromSelected()">Copiar selecionada</button>
-        <button class="btn btn-ghost" onclick="fillCreatorFromSelected()">Usar valores</button>
-      </div>
-      <div class="edit-hint">Use os eixos calibrados acima. A elipse criada entra na lista inferior e pode ser comparada, rotacionada e ajustada.</div>
+      <button class="btn btn-primary" onclick="createEllipseFromPreview()">Criar elipse projetada</button>
+      <button class="btn btn-ghost" onclick="clearMarkPoints()">Limpar marcações</button>
+      <div class="edit-hint">No modo 4 pontas, clique primeiro nas duas extremidades do eixo maior e depois nas duas extremidades do eixo menor.</div>
     </div>
   </div>
 
@@ -562,8 +534,8 @@ tr:last-child td { border-bottom: none; }
       <p class="canvas-hint">
         <span class="green">verde</span> = elipses detectadas/editáveis &nbsp;|&nbsp;
         <span class="yellow">amarelo</span> = seleção e alças &nbsp;|&nbsp;
-        <span>alça circular externa</span> = rotacionar &nbsp;|&nbsp;
-        tracejado azul/vermelho = previsão BIVA calculada pelos dados do grupo
+        <span>magenta</span> = prévia do seletor &nbsp;|&nbsp;
+        alça circular externa = rotacionar
       </p>
     </div>
 
@@ -589,6 +561,9 @@ let compareAId = null;
 let compareBId = null;
 let dragState = null;
 let nextEllipseId = 1;
+let markMode = 'select';
+let markPoints = [];
+let previewEllipse = null;
 
 const gv = id => parseFloat(document.getElementById(id).value);
 const gi = id => parseInt(document.getElementById(id).value, 10);
@@ -621,6 +596,8 @@ document.getElementById('imgUpload').addEventListener('change', e => {
       img = im;
       ellipses = [];
       selectedEllipseId = null;
+      markPoints = [];
+      previewEllipse = null;
       plotBounds = null;
       const maxW = Math.min(im.width, 980);
       cv.width = maxW;
@@ -799,7 +776,7 @@ function autoDetectAll() {
 
 function pca(pts) {
   const n = pts.length;
-  if (n < 6) return null;
+  if (n < 5) return null;
   let sx = 0, sy = 0;
   for (const [x, y] of pts) {
     sx += x;
@@ -1016,67 +993,6 @@ function dedupeEllipses(items) {
   return kept;
 }
 
-function getGroups() {
-  const defs = [
-    { id: 1, color: '#4f8ef7' },
-    { id: 2, color: '#f25f5c' }
-  ];
-  return defs.map(def => {
-    const mr = finiteOrNull(gv(`g${def.id}_mr`));
-    const mx = finiteOrNull(gv(`g${def.id}_mx`));
-    const sr = positiveOrNull(gv(`g${def.id}_sr`));
-    const sx = positiveOrNull(gv(`g${def.id}_sx`));
-    const nRaw = gi(`g${def.id}_n`);
-    const n = Number.isFinite(nRaw) && nRaw > 0 ? nRaw : 1;
-    const ready = mr !== null && mx !== null && sr !== null && sx !== null;
-    return {
-      ...def,
-      mr,
-      mx,
-      sr,
-      sx,
-      n,
-      ready,
-      phaMean: gvn(`g${def.id}_pha_mean`),
-      phaSd: gvn(`g${def.id}_pha_sd`)
-    };
-  }).filter(g => g.ready);
-}
-
-function matchGroup(e, groups) {
-  const xR = gv('xMax') - gv('xMin');
-  const yR = gv('yMax') - gv('yMin');
-  let best = null, bestDist = Infinity;
-  if (!groups.length || !Number.isFinite(xR) || !Number.isFinite(yR) || Math.abs(xR) < 1e-8 || Math.abs(yR) < 1e-8) {
-    return { group: null, distance: Infinity };
-  }
-  for (const g of groups) {
-    const d = Math.hypot((e.cx - g.mr) / xR, (e.cy - g.mx) / yR);
-    if (d < bestDist) {
-      bestDist = d;
-      best = g;
-    }
-  }
-  return { group: best, distance: bestDist };
-}
-
-function rhoFromAngle(theta, sdR, sdXc) {
-  if (!Number.isFinite(theta) || !Number.isFinite(sdR) || !Number.isFinite(sdXc) || Math.abs(sdR * sdXc) < 1e-8) return null;
-  const t2 = Math.tan(2 * theta);
-  const rho = t2 * (sdR * sdR - sdXc * sdXc) / (2 * sdR * sdXc);
-  return Math.max(-0.999, Math.min(0.999, rho));
-}
-
-function rhoFromPhaseAngle(mr, mx, sr, sx, sdAlphaDeg) {
-  if (![mr, mx, sr, sx, sdAlphaDeg].every(Number.isFinite) || sdAlphaDeg <= 0) return null;
-  const sdAlpha = sdAlphaDeg * Math.PI / 180;
-  const r2 = mr * mr + mx * mx;
-  const denom = 2 * mr * mx * sr * sx;
-  if (Math.abs(denom) < 1e-10 || r2 < 1e-10) return null;
-  const numerator = mx * mx * sr * sr + mr * mr * sx * sx - sdAlpha * sdAlpha * r2 * r2;
-  return Math.max(-0.999, Math.min(0.999, numerator / denom));
-}
-
 function rhoFromEllipseGeometry(e) {
   if (!e || ![e.a, e.b, e.theta].every(Number.isFinite) || e.a <= 0 || e.b <= 0) return null;
   const a2 = e.a * e.a;
@@ -1091,23 +1007,10 @@ function rhoFromEllipseGeometry(e) {
   return Math.max(-0.999, Math.min(0.999, cov / denom));
 }
 
-function combineRho(rhoImage, rhoPhase, N, quality) {
-  if (rhoImage === null) return rhoPhase;
-  if (rhoPhase === null) return rhoImage;
-  const wImage = 0.45 + Math.max(0.05, quality || 0.35);
-  const wPhase = Math.sqrt(Math.max(1, N || 1) / 30);
-  return (wImage * rhoImage + wPhase * rhoPhase) / (wImage + wPhase);
-}
-
 function enrichEllipses() {
-  const groups = getGroups();
   return ellipses.map(e => {
-    const { group, distance } = matchGroup(e, groups);
     const rhoEllipse = rhoFromEllipseGeometry(e);
-    const rhoImage = group ? rhoFromAngle(e.theta, group.sr, group.sx) : null;
-    const rhoPhase = group ? rhoFromPhaseAngle(group.mr, group.mx, group.sr, group.sx, group.phaSd) : null;
-    const rhoCombined = group ? combineRho(rhoImage, rhoPhase, group.n, e.quality) : null;
-    return { ...e, group, distance, rhoEllipse, rhoImage, rhoPhase, rhoCombined };
+    return { ...e, rhoEllipse };
   });
 }
 
@@ -1159,6 +1062,33 @@ function drawGhostEllipse(e, color, label) {
   ctx.font = '10px IBM Plex Mono, monospace';
   ctx.textAlign = 'left';
   ctx.fillText(label, c.x + 8, c.y + 14);
+  ctx.restore();
+}
+
+function drawMarkPreview() {
+  ctx.save();
+  for (let i = 0; i < markPoints.length; i++) {
+    const p = toPixel(markPoints[i].x, markPoints[i].y);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#e86dff';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '10px IBM Plex Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${i + 1}`, p.x + 7, p.y - 6);
+  }
+  if (previewEllipse) {
+    drawEllipsePath(previewEllipse);
+    ctx.strokeStyle = '#e86dff';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([9, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.restore();
 }
 
@@ -1234,26 +1164,6 @@ function getHandles(e) {
   ];
 }
 
-function drawSimEllipse(mr, mx, sr, sx, rho, N, etype, color) {
-  if (rho === null) return;
-  const varR = sr * sr, varXc = sx * sx, cov = rho * sr * sx;
-  const tr = varR + varXc;
-  const det = varR * varXc - cov * cov;
-  const disc = Math.sqrt(Math.max(0, tr * tr - 4 * det));
-  const l1 = (tr + disc) / 2, l2 = Math.max(0, (tr - disc) / 2);
-  const theta = Math.atan2(2 * cov, varR - varXc) / 2;
-  let k2 = 5.991;
-  if (etype === 'confidence') k2 /= Math.max(1, N || 1);
-  const sf = Math.sqrt(k2);
-  const sim = { cx: mr, cy: mx, a: sf * Math.sqrt(l1), b: sf * Math.sqrt(l2), theta };
-  drawEllipsePath(sim);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.2;
-  ctx.setLineDash([8, 5]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-}
-
 function renderAll() {
   drawBg();
   if (plotBounds) {
@@ -1266,17 +1176,6 @@ function renderAll() {
   }
 
   const enriched = enrichEllipses();
-  const bestByGroup = [];
-  for (const e of enriched) {
-    if (!e.group || e.rhoCombined === null) continue;
-    const current = bestByGroup[e.group.id];
-    const score = e.quality / Math.max(0.06, e.distance + 0.04);
-    if (!current || score > current._rank) bestByGroup[e.group.id] = { ...e, _rank: score };
-  }
-  for (const e of bestByGroup.filter(Boolean)) {
-    drawSimEllipse(e.group.mr, e.group.mx, e.group.sr, e.group.sx, e.rhoCombined, e.group.n, document.getElementById('ellType').value, e.group.color);
-  }
-
   for (const e of enriched) drawDetectedEllipse(e, e.id === selectedEllipseId);
   const compareA = enriched.find(e => e.id === compareAId);
   const compareB = enriched.find(e => e.id === compareBId);
@@ -1287,7 +1186,105 @@ function renderAll() {
     drawGhostEllipse(selected.original, '#ffffff', 'original');
   }
   if (selected) drawHandles(selected);
+  drawMarkPreview();
   showTable(enriched);
+}
+
+function setMarkStatus(text, active = false) {
+  const el = document.getElementById('markStatus');
+  el.className = active ? 'axis-detect-info active' : 'axis-detect-info';
+  el.textContent = text;
+}
+
+function setMarkMode(mode) {
+  markMode = mode;
+  markPoints = [];
+  previewEllipse = null;
+  for (const id of ['modeSelect', 'modeContour', 'modeAxes']) {
+    document.getElementById(id).classList.remove('active');
+  }
+  document.getElementById(mode === 'contour' ? 'modeContour' : mode === 'axes' ? 'modeAxes' : 'modeSelect').classList.add('active');
+  if (mode === 'contour') {
+    setMarkStatus('Clique em pelo menos 5 pontos distribuídos pelo contorno da elipse.', true);
+  } else if (mode === 'axes') {
+    setMarkStatus('Clique em 4 pontas: duas do eixo maior e depois duas do eixo menor.', true);
+  } else {
+    setMarkStatus('Modo seleção: clique em uma elipse para ajustar pelas alças.');
+  }
+  renderAll();
+}
+
+function ellipseFromAxisTips(points) {
+  if (points.length < 4) return null;
+  const [p1, p2, p3, p4] = points;
+  const majorCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+  const minorCenter = { x: (p3.x + p4.x) / 2, y: (p3.y + p4.y) / 2 };
+  return {
+    cx: (majorCenter.x + minorCenter.x) / 2,
+    cy: (majorCenter.y + minorCenter.y) / 2,
+    a: Math.max(0.0001, Math.hypot(p2.x - p1.x, p2.y - p1.y) / 2),
+    b: Math.max(0.0001, Math.hypot(p4.x - p3.x, p4.y - p3.y) / 2),
+    theta: Math.atan2(p2.y - p1.y, p2.x - p1.x)
+  };
+}
+
+function estimateMarkedEllipse() {
+  if (markMode === 'contour' && markPoints.length >= 5) {
+    const fit = pca(markPoints.map(p => [p.x, p.y]));
+    previewEllipse = fit ? { cx: fit.cx, cy: fit.cy, a: fit.a, b: fit.b, theta: fit.theta } : null;
+  } else if (markMode === 'axes' && markPoints.length >= 4) {
+    previewEllipse = ellipseFromAxisTips(markPoints.slice(0, 4));
+  } else {
+    previewEllipse = null;
+  }
+}
+
+function addMarkPoint(pos) {
+  if (markMode === 'axes' && markPoints.length >= 4) return;
+  markPoints.push(toData(pos.x, pos.y));
+  estimateMarkedEllipse();
+  if (markMode === 'contour') {
+    setMarkStatus(previewEllipse
+      ? `${markPoints.length} pontos marcados. Prévia pronta; adicione pontos ou crie a elipse projetada.`
+      : `${markPoints.length}/5 pontos mínimos marcados no contorno.`, !!previewEllipse);
+  } else {
+    setMarkStatus(previewEllipse
+      ? '4/4 pontas marcadas. Prévia pronta para criar a elipse projetada.'
+      : `${markPoints.length}/4 pontas marcadas.`, !!previewEllipse);
+  }
+  renderAll();
+}
+
+function createEllipseFromPreview() {
+  if (!previewEllipse) {
+    setMarkStatus('Ainda não há prévia. Marque o contorno ou as quatro pontas dos eixos.');
+    return;
+  }
+  const e = {
+    ...previewEllipse,
+    id: nextEllipseId++,
+    label: markMode === 'axes' ? 'projetada pelas pontas' : 'projetada pelo contorno',
+    size: markPoints.length,
+    meanGray: 0,
+    quality: 1,
+    source: 'seletor'
+  };
+  ellipses.unshift(e);
+  selectedEllipseId = e.id;
+  markPoints = [];
+  previewEllipse = null;
+  setMarkMode('select');
+  setEditStatus(`Elipse #${e.id} criada pela ferramenta seletora. Ajuste pelas alças se necessário.`, 'ok');
+  renderAll();
+}
+
+function clearMarkPoints() {
+  markPoints = [];
+  previewEllipse = null;
+  setMarkStatus(markMode === 'select'
+    ? 'Modo seleção: clique em uma elipse para ajustar pelas alças.'
+    : 'Marcações limpas. Clique novamente na imagem.');
+  renderAll();
 }
 
 function pointerPos(ev) {
@@ -1327,8 +1324,13 @@ function hitTest(pos) {
 }
 
 function onPointerDown(ev) {
-  if (!ellipses.length) return;
   const pos = pointerPos(ev);
+  if (markMode !== 'select') {
+    addMarkPoint(pos);
+    ev.preventDefault();
+    return;
+  }
+  if (!ellipses.length) return;
   const hit = hitTest(pos);
   if (!hit) {
     selectedEllipseId = null;
@@ -1352,6 +1354,10 @@ function onPointerDown(ev) {
 function onPointerMove(ev) {
   const pos = pointerPos(ev);
   if (!dragState) {
+    if (markMode !== 'select') {
+      cv.style.cursor = 'crosshair';
+      return;
+    }
     const hit = hitTest(pos);
     cv.style.cursor = hit ? (hit.handle === 'rotate' ? 'grab' : 'move') : 'crosshair';
     return;
@@ -1391,7 +1397,7 @@ function onPointerUp(ev) {
   const e = ellipses.find(item => item.id === dragState.id);
   dragState = null;
   if (e) {
-    setEditStatus(`Elipse #${e.id} ajustada manualmente. ρ e matriz foram recalculados.`, 'ok');
+    setEditStatus(`Elipse #${e.id} ajustada manualmente. O ρ previsto foi recalculado.`, 'ok');
   }
   try { cv.releasePointerCapture(ev.pointerId); } catch (_) {}
 }
@@ -1432,70 +1438,6 @@ function duplicateSelected() {
   ellipses.unshift(copy);
   selectedEllipseId = copy.id;
   setEditStatus(`Elipse #${e.id} duplicada como #${copy.id}.`, 'ok');
-  renderAll();
-}
-
-function createEllipseFromInputs() {
-  const cx = finiteOrNull(gv('new_cx'));
-  const cy = finiteOrNull(gv('new_cy'));
-  const a = positiveOrNull(gv('new_a'));
-  const b = positiveOrNull(gv('new_b'));
-  const thetaDeg = finiteOrNull(gv('new_theta')) ?? 0;
-  const label = document.getElementById('new_label').value.trim();
-  if (cx === null || cy === null || a === null || b === null) {
-    setEditStatus('Informe centro e semieixos para montar a elipse.', 'warn');
-    return;
-  }
-  const e = {
-    id: nextEllipseId++,
-    cx,
-    cy,
-    a,
-    b,
-    theta: thetaDeg * Math.PI / 180,
-    label,
-    size: 0,
-    meanGray: 0,
-    quality: 1,
-    source: 'fornecida'
-  };
-  ellipses.unshift(e);
-  selectedEllipseId = e.id;
-  setEditStatus(`Elipse #${e.id} criada com as características fornecidas.`, 'ok');
-  renderAll();
-}
-
-function fillCreatorFromSelected() {
-  const e = ellipses.find(item => item.id === selectedEllipseId);
-  if (!e) {
-    setEditStatus('Selecione uma elipse antes de copiar valores.', 'warn');
-    return;
-  }
-  document.getElementById('new_cx').value = fmt(e.cx, 2);
-  document.getElementById('new_cy').value = fmt(e.cy, 2);
-  document.getElementById('new_a').value = fmt(e.a, 2);
-  document.getElementById('new_b').value = fmt(e.b, 2);
-  document.getElementById('new_theta').value = fmt(e.theta * 180 / Math.PI, 1);
-  document.getElementById('new_label').value = e.label || `copia-${e.id}`;
-  setEditStatus(`Valores da elipse #${e.id} enviados para o formulário de criação.`, 'info');
-}
-
-function createEllipseFromSelected() {
-  const e = ellipses.find(item => item.id === selectedEllipseId);
-  if (!e) {
-    setEditStatus('Selecione uma elipse antes de copiar.', 'warn');
-    return;
-  }
-  const copy = {
-    ...snapshotEllipse(e),
-    id: nextEllipseId++,
-    label: e.label ? `${e.label} copia` : `copia #${e.id}`,
-    source: 'fornecida',
-    quality: 1
-  };
-  ellipses.unshift(copy);
-  selectedEllipseId = copy.id;
-  setEditStatus(`Elipse #${e.id} copiada como #${copy.id} para contraste.`, 'ok');
   renderAll();
 }
 
@@ -1583,6 +1525,8 @@ function clearAll() {
   compareAId = null;
   compareBId = null;
   dragState = null;
+  markPoints = [];
+  previewEllipse = null;
   plotBounds = null;
   drawBg();
   setAxisStatus('Limpo. Carregue uma imagem ou detecte os eixos novamente.', false);
@@ -1602,7 +1546,6 @@ function deg(theta) {
 function selectedSummary(results) {
   const s = results.find(r => r.id === selectedEllipseId) || results[0];
   if (!s) return '';
-  const finalRho = s.rhoCombined !== null ? s.rhoCombined : s.rhoEllipse;
   return `<div class="summary-grid">
     <div class="summary-box">
       <div class="summary-label">Elipse selecionada</div>
@@ -1613,8 +1556,8 @@ function selectedSummary(results) {
       <div class="summary-value">${s.rhoEllipse !== null ? fmt(s.rhoEllipse, 4) : 'N/A'}</div>
     </div>
     <div class="summary-box">
-      <div class="summary-label">ρ final</div>
-      <div class="summary-value">${finalRho !== null ? fmt(finalRho, 4) : 'N/A'}</div>
+      <div class="summary-label">Rotação</div>
+      <div class="summary-value">${fmt(deg(s.theta), 1)}°</div>
     </div>
   </div>`;
 }
@@ -1653,15 +1596,8 @@ function showTable(results) {
     return;
   }
 
-  const hasPhase = results.some(r => r.rhoPhase !== null);
   let rows = '';
   for (const r of results) {
-    const g = r.group;
-    const col = g ? g.color : '#8190ad';
-    const cov = g && r.rhoCombined !== null ? r.rhoCombined * g.sr * g.sx : null;
-    const varR = g ? g.sr * g.sr : null;
-    const varX = g ? g.sx * g.sx : null;
-    const finalVal = r.rhoCombined !== null ? r.rhoCombined : r.rhoEllipse;
     const rowClass = [
       r.id === selectedEllipseId ? 'selected-row' : '',
       r.id === compareAId ? 'compare-a-row' : '',
@@ -1669,13 +1605,12 @@ function showTable(results) {
     ].filter(Boolean).join(' ');
     const source = r.source === 'manual'
       ? '<span class="badge badge-yellow">manual</span>'
-      : r.source === 'fornecida'
-        ? '<span class="badge badge-gray">fornecida</span>'
+      : r.source === 'seletor'
+        ? '<span class="badge badge-gray">seletor</span>'
       : '<span class="badge badge-green">auto</span>';
     const nameText = r.label ? `<br><span class="rho-mini">${r.label}</span>` : '';
     rows += `<tr class="${rowClass}">
       <td><button class="mini-btn" onclick="selectEllipse(${r.id})">#${r.id}</button></td>
-      <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>${g ? `Grupo ${g.id}` : '-'}</td>
       <td>
         <div class="edit-grid">
           <input class="ellipse-input" type="number" step="0.01" value="${fmt(r.cx)}" title="Centro R/H" onchange="setEllipseValue(${r.id}, 'cx', this.value)">
@@ -1692,11 +1627,7 @@ function showTable(results) {
         <input class="ellipse-input" type="number" step="0.1" value="${fmt(r.theta * 180 / Math.PI, 1)}" title="Rotação em graus" onchange="setEllipseValue(${r.id}, 'theta', this.value)">
       </td>
       <td>${source}${nameText}<br><span class="rho-mini">q=${fmt(r.quality, 2)} px=${r.size || '-'}</span></td>
-      <td><span class="rho-chip rho-chip-strong">${r.rhoEllipse !== null ? fmt(r.rhoEllipse, 4) : 'N/A'}</span><br><span class="rho-mini">geometria</span></td>
-      <td><span class="rho-mini">${r.rhoImage !== null ? fmt(r.rhoImage, 4) : 'N/A'}</span><br><span class="rho-mini">grupo</span></td>
-      ${hasPhase ? `<td><span class="rho-mini" style="color:var(--yellow)">${r.rhoPhase !== null ? fmt(r.rhoPhase, 4) : '-'}</span><br><span class="rho-mini">fase</span></td>` : ''}
-      <td><span class="rho-chip">${finalVal !== null ? fmt(finalVal, 4) : 'N/A'}</span></td>
-      <td class="matrix-cell">[${varR !== null ? fmt(varR, 3) : '-'} &nbsp; ${cov !== null ? fmt(cov, 3) : '-'}]<br>[${cov !== null ? fmt(cov, 3) : '-'} &nbsp; ${varX !== null ? fmt(varX, 3) : '-'}]</td>
+      <td><span class="rho-chip rho-chip-strong">${r.rhoEllipse !== null ? fmt(r.rhoEllipse, 4) : 'N/A'}</span><br><span class="rho-mini">correlação prevista</span></td>
       <td>
         <div class="action-row">
           <button class="mini-btn" title="Mover para esquerda" onclick="nudgeEllipse(${r.id}, -1, 0)">←</button>
@@ -1725,23 +1656,18 @@ function showTable(results) {
       <table>
         <thead><tr>
           <th>Sel.</th>
-          <th>Grupo</th>
           <th>Centro</th>
           <th>Semieixos</th>
           <th>Ângulo</th>
           <th>Origem</th>
-          <th>ρ elipse</th>
-          <th>ρ grupo</th>
-          ${hasPhase ? '<th>ρ fase</th>' : ''}
-          <th>ρ final</th>
-          <th>Matriz Σ</th>
+          <th>ρ previsto</th>
           <th>Ações</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
     <div class="status-msg msg-info" style="margin-top:10px">
-      ${axisNote} | ${selected} O ρ elipse vem da geometria do contorno; o ρ final usa os dados do grupo quando eles são informados. Use A/B para comparar duas elipses.
+      ${axisNote} | ${selected} O ρ previsto vem da geometria da elipse projetada. Use A/B para comparar duas elipses.
       <button class="mini-btn" style="margin-left:8px" onclick="clearComparison()">Limpar A/B</button>
     </div>
   `;
